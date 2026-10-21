@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎡 عجلة التحدي البرمجي - لغة Python</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Tajawal & Fira Code -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* خلفية الرموز البرمجية المتحركة */
+        .code-bg-pattern {
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='10' y='30' fill='%2338bdf8' opacity='0.05' font-family='monospace' font-size='14'%3Ewhile True:%3C/text%3E%3Ctext x='10' y='70' fill='%23ec4899' opacity='0.05' font-family='monospace' font-size='14'%3Efor x in range:%3C/text%3E%3C/svg%3E");
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+            direction: ltr;
+        }
+
+        /* توهج الأزرار والعناصر */
+        .btn-glow {
+            box-shadow: 0 0 25px rgba(236, 72, 153, 0.5);
+            transition: all 0.3s ease;
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 35px rgba(236, 72, 153, 0.8);
+            transform: translateY(-2px);
+        }
+        .btn-glow:active {
+            transform: translateY(1px);
+        }
+
+        /* سهم المؤشر للتحديد */
+        .wheel-pointer {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 35px solid #f43f5e;
+            filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
+        }
+
+        /* تأثيرات النوافذ المنبثقة */
+        .modal-enter {
+            animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* تخصيص محرر الكود الناقص */
+        .code-input {
+            background-color: #1e293b;
+            border: 2px solid #3b82f6;
+            color: #38bdf8;
+            border-radius: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .code-input:focus {
+            border-color: #ec4899;
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+        }
+
+        /* زر الصوت */
+        .sound-toggle {
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="text-white flex flex-col justify-between items-center min-h-screen relative p-4">
+    <div class="code-bg-pattern"></div>
+
+    <!-- الشريط العلوي والعنوان -->
+    <header class="w-full max-w-5xl z-10 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-900/80 p-4 rounded-2xl border border-slate-700/50 shadow-2xl backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <span class="text-4xl">🎡</span>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-black bg-gradient-to-r from-amber-300 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+                    عجلة التحدي البرمجي
+                </h1>
+                <p class="text-sm text-slate-300">مراجعة أوامر التكرار في Python - الصف العاشر</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <!-- العداد -->
+            <div class="bg-slate-800/90 px-4 py-2 rounded-xl border border-slate-600 flex items-center gap-2">
+                <span class="text-slate-400 font-bold">الأسئلة المتبقية:</span>
+                <span id="remaining-count" class="text-2xl font-black text-cyan-400">3</span>
+                <span class="text-slate-400 font-bold">/ 3</span>
+            </div>
+
+            <!-- التحكم بالصوت -->
+            <button id="sound-btn" onclick="toggleMute()" class="sound-toggle bg-slate-800 hover:bg-slate-700 p-2.5 rounded-xl border border-slate-600 transition flex items-center gap-2" title="كتم/تشغيل الصوت">
+                <span id="sound-icon" class="text-xl">🔊</span>
+            </button>
+
+            <!-- زر إعادة التعيين -->
+            <button onclick="resetGame()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-3 py-2.5 rounded-xl border border-slate-600 transition flex items-center gap-1 font-bold text-sm">
+                <span>🔄</span> إعادة اللعب
+            </button>
+        </div>
+    </header>
+
+    <!-- منطقة اللعب والعجلة -->
+    <main class="z-10 flex flex-col items-center justify-center my-6 relative w-full max-w-md">
+        <!-- مؤشر التحديد العلوي -->
+        <div class="wheel-pointer z-20 -mb-4"></div>
+
+        <!-- حاوية العجلة -->
+        <div class="relative p-3 bg-slate-800/60 rounded-full border-4 border-slate-700/80 shadow-2xl backdrop-blur-lg">
+            <canvas id="wheelCanvas" width="380" height="380" class="rounded-full shadow-inner cursor-pointer"></canvas>
+            
+            <!-- المركز المزخرف للعجلة -->
+            <div class="absolute inset-0 m-auto w-16 h-16 bg-slate-900 rounded-full border-4 border-amber-400 shadow-lg flex items-center justify-center pointer-events-none z-10">
+                <span class="text-2xl">🐍</span>
+            </div>
+        </div>
+
+        <!-- زر التدوير -->
+        <button id="spin-btn" onclick="spinWheel()" class="btn-glow mt-8 bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-black text-xl md:text-2xl px-10 py-4 rounded-2xl flex items-center gap-3 transition cursor-pointer">
+            <span>🎡</span>
+            <span>أدِر العجلة!</span>
+        </button>
+    </main>
+
+    <!-- تذييل الصفحة -->
+    <footer class="z-10 text-center text-slate-400 text-xs md:text-sm py-2">
+        لغة Python • الصف العاشر • أوامر التكرار <code class="code-font text-cyan-400">for</code> & <code class="code-font text-cyan-400">while</code>
+    </footer>
+
+    <!-- نافذة عرض السؤال (Modal) -->
+    <div id="question-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="modal-enter bg-slate-900 border-2 border-slate-700 rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl text-right relative overflow-hidden">
+            <!-- زخرفة علوية -->
+            <div class="absolute top-0 right-0 left-0 h-2 bg-gradient-to-l from-cyan-500 via-pink-500 to-amber-500"></div>
+
+            <div class="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <span id="q-badge" class="bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-4 py-1.5 rounded-xl font-bold text-lg">
+                        سؤال رقم 12
+                    </span>
+                    <h3 class="text-lg font-bold text-slate-300">تحدي أكواد Python</h3>
+                </div>
+                <span class="text-2xl">💻</span>
+            </div>
+
+            <!-- نص السؤال -->
+            <p id="q-text" class="text-lg md:text-xl font-medium mb-4 text-slate-100 leading-relaxed">
+                أكملي تعليمة التكرار المحدد لطباعة الأعداد من 0 إلى 4:
+            </p>
+
+            <!-- صندوق الكود التفاعلي -->
+            <div class="bg-slate-950 rounded-2xl p-5 border border-slate-800 mb-6 dir-ltr text-left font-mono text-base md:text-lg text-slate-200 code-font shadow-inner">
+                <pre id="q-code-block" class="whitespace-pre-wrap leading-loose"></pre>
+            </div>
+
+            <!-- خيارات الإجابة التفاعلية (للتأكيدات أو الخيارات السريعة) -->
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 hidden">
+                <!-- يُملأ ديناميكياً لتوفير إجابة بلمسة واحدة إن رغبت الطالبة -->
+            </div>
+
+            <!-- منطقة التغذية الراجعة -->
+            <div id="feedback" class="mb-6 p-4 rounded-xl hidden font-bold text-center text-lg transition-all"></div>
+
+            <!-- أزرار الإجراءات -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                <button id="submit-btn" onclick="checkAnswer()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-8 py-3 rounded-xl transition text-lg flex items-center justify-center gap-2">
+                    <span>تحقق من الإجابة</span>
+                    <span>✨</span>
+                </button>
+                <button id="next-btn" onclick="closeQuestionModal()" class="w-full sm:w-auto bg-slate-700 hover:bg-slate-600 text-white font-bold px-8 py-3 rounded-xl transition text-lg hidden flex items-center justify-center gap-2">
+                    <span>متابعة التحدي</span>
+                    <span>➡️</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- شاشة الفوز النهائية (Modal) -->
+    <div id="win-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-lg hidden flex items-center justify-center p-4">
+        <canvas id="confettiCanvas" class="absolute inset-0 pointer-events-none z-10"></canvas>
+        <div class="modal-enter bg-slate-900 border-2 border-amber-500/50 rounded-3xl max-w-lg w-full p-8 shadow-2xl text-center relative z-20">
+            <div class="text-7xl mb-4 animate-bounce">🏆</div>
+            <h2 class="text-3xl md:text-4xl font-black bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent mb-3">
+                مبدعات البرمجة!
+            </h2>
+            <p class="text-xl text-slate-200 font-bold mb-6">
+                أنهيتن جميع التحديات بنجاح واقتدار 🎉
+            </p>
+            <div class="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 mb-8">
+                <p class="text-slate-300 text-sm mb-1">النتيجة النهائية</p>
+                <p class="text-3xl font-black text-emerald-400">3 / 3 إجابات صحيحة 💯</p>
+            </div>
+            <button onclick="resetGame(); closeWinModal();" class="btn-glow w-full bg-gradient-to-r from-pink-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-black text-xl py-4 rounded-2xl transition">
+                🎡 بدء جولة جديدة
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ===================================================
+           1. بيانات الأسئلة وحالة اللعبة
+           =================================================== */
+        const initialQuestions = [
+            {
+                id: 12,
+                title: "السؤال 12",
+                text: "أكملي تعليمة التكرار المحدد لطباعة الأعداد من 0 إلى 4:",
+                correctAnswer: "in range",
+                altAnswers: ["in range", "inrange"],
+                codeTemplate: (val) => `for x <input type="text" id="blank-input" value="${val}" class="code-input w-36 text-center" placeholder="..........." />(5):\n    print(x)`,
+                options: ["in range", "range", "in"]
+            },
+            {
+                id: 13,
+                title: "السؤال 13",
+                text: "أكملي التعليمة البرمجية لتكرار تنفيذ الأوامر إلى ما لا نهاية (تكرار لا نهائي):",
+                correctAnswer: "while True:",
+                altAnswers: ["while True:", "while True", "while true:", "while true"],
+                codeTemplate: (val) => `x = 1\n<input type="text" id="blank-input" value="${val}" class="code-input w-48 text-center" placeholder="..........." />\n    print(x)\n    x = x + 1`,
+                options: ["while True:", "while False:", "for True:"]
+            },
+            {
+                id: 14,
+                title: "السؤال 14",
+                text: "أكملي التعليمة بالكلمة المناسبة لإيقاف عملية التكرار اللانهائي عند إدخال كلمة المرور الصحيحة:",
+                correctAnswer: "break",
+                altAnswers: ["break", "break;"],
+                codeTemplate: (val) => `while True:\n    x = input('enter password:')\n    if x == 'a12345':\n        <input type="text" id="blank-input" value="${val}" class="code-input w-36 text-center" placeholder="..........." />\n        print('password accepted')`,
+                options: ["break", "stop", "exit"]
+            }
+        ];
+
+        let activeQuestions = [...initialQuestions];
+        let currentQuestion = null;
+        let isSpinning = false;
+        let currentRotation = 0;
+        let isMuted = false;
+
+        // الألوان لكل قطاع بالعجلة
+        const sectorColors = [
+            { bg: "#ec4899", text: "#ffffff" }, // الوردي
+            { bg: "#3b82f6", text: "#ffffff" }, // الأزرق
+            { bg: "#8b5cf6", text: "#ffffff" }  // البنفسجي
+        ];
+
+        /* ===================================================
+           2. محرك الصوت باستخدام Web Audio API (مضمون 100%)
+           =================================================== */
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioCtx();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (isMuted) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+
+                if (type === 'tick') {
+                    // صوت تكة دوران العجلة
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.04);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                } 
+                else if (type === 'stop') {
+                    // صوت توقف العجلة (Ding)
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                }
+                else if (type === 'correct') {
+                    // نغمة إجابة صحيحة مشجعة (Fanfare)
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        const startTime = now + (idx * 0.08);
+                        gain.gain.setValueAtTime(0, startTime);
+                        gain.gain.linearRampToValueAtTime(0.25, startTime + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(startTime);
+                        osc.stop(startTime + 0.3);
+                    });
+                }
+                else if (type === 'wrong') {
+                    // نغمة محاولة جديدة لطيفة
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(280, now);
+                    osc.frequency.linearRampToValueAtTime(220, now + 0.25);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+                else if (type === 'win') {
+                    // موسيقى احتفال نهائية
+                    const melody = [
+                        { f: 523.25, d: 0.15 }, { f: 659.25, d: 0.15 }, { f: 783.99, d: 0.15 },
+                        { f: 1046.50, d: 0.4 }, { f: 880.00, d: 0.2 }, { f: 1046.50, d: 0.6 }
+                    ];
+                    let currTime = now;
+                    melody.forEach(note => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.value = note.f;
+                        gain.gain.setValueAtTime(0.3, currTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, currTime + note.d);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(currTime);
+                        osc.stop(currTime + note.d);
+                        currTime += note.d;
+                    });
+                }
+            } catch (e) {
+                console.log("Audio error:", e);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('sound-icon').textContent = isMuted ? '🔇' : '🔊';
+        }
+
+        /* ===================================================
+           3. رسم العجلة وحركتها الديناميكية (Canvas)
+           =================================================== */
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = canvas.width / 2 - 10;
+
+        function drawWheel() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const total = activeQuestions.length;
+            if (total === 0) {
+                // العجلة فارغة (اكتملت جميع الأسئلة)
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = "#1e293b";
+                ctx.fill();
+                ctx.strokeStyle = "#10b981";
+                ctx.lineWidth = 6;
+                ctx.stroke();
+
+                ctx.fillStyle = "#10b981";
+                ctx.font = "bold 24px Tajawal";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("تمت الإجابة بنجاح! 🏆", centerX, centerY);
+                return;
+            }
+
+            const arcSize = (2 * Math.PI) / total;
+
+            for (let i = 0; i < total; i++) {
+                const angle = currentRotation + i * arcSize;
+                const colorObj = sectorColors[i % sectorColors.length];
+
+                // رسم القطاع
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, angle, angle + arcSize);
+                ctx.closePath();
+                ctx.fillStyle = colorObj.bg;
+                ctx.fill();
+                ctx.strokeStyle = "#0f172a";
+                ctx.lineWidth = 5;
+                ctx.stroke();
+
+                // رسم النص داخل القطاع
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle + arcSize / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = colorObj.text;
+                ctx.font = "black 28px Tajawal";
+                ctx.fillText(`سؤال ${activeQuestions[i].id}`, radius - 35, 10);
+                ctx.restore();
+            }
+
+            // الإطار الخارجي البراق
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = "#f59e0b";
+            ctx.lineWidth = 8;
+            ctx.stroke();
+        }
+
+        function spinWheel() {
+            if (isSpinning || activeQuestions.length === 0) return;
+
+            initAudio();
+            isSpinning = true;
+            document.getElementById('spin-btn').disabled = true;
+            document.getElementById('spin-btn').classList.add('opacity-50', 'cursor-not-allowed');
+
+            // اختيار سؤال عشوائي من الأسئلة المتبقية
+            const selectedIndex = Math.floor(Math.random() * activeQuestions.length);
+            const totalSectors = activeQuestions.length;
+            const sectorAngle = (2 * Math.PI) / totalSectors;
+
+            // حساب الزاوية المطلوبة ليتوقف السهم (السهم أعلى العجلة = -Math.PI / 2)
+            // نحدد مدة تدوير بحدود 4 ثوانٍ مع 5 إلى 8 دورات كاملة
+            const extraRounds = 5 + Math.floor(Math.random() * 3);
+            
+            // منتصف القطاع المستهدف
+            const targetSectorAngle = selectedIndex * sectorAngle + sectorAngle / 2;
+            
+            // حساب الإزاحة الإجمالية
+            const targetRotation = (2 * Math.PI * extraRounds) + (1.5 * Math.PI) - targetSectorAngle;
+            
+            const startRotation = currentRotation % (2 * Math.PI);
+            const totalRotationNeeded = targetRotation - startRotation;
+
+            const duration = 4000; // 4 ثوانٍ
+            const startTime = performance.now();
+            let lastTickAngle = startRotation;
+
+            function animateSpin(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // دالة التخفيف لتباطؤ مرن (Ease-Out Cubic)
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                
+                currentRotation = startRotation + totalRotationNeeded * easeOut;
+
+                // تشغيل صوت التكة عند المرور بين القطاعات
+                if (Math.abs(currentRotation - lastTickAngle) >= sectorAngle) {
+                    playSound('tick');
+                    lastTickAngle = currentRotation;
+                }
+
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateSpin);
+                } else {
+                    isSpinning = false;
+                    playSound('stop');
+                    currentQuestion = activeQuestions[selectedIndex];
+                    setTimeout(() => {
+                        openQuestionModal(currentQuestion);
+                    }, 400);
+                }
+            }
+
+            requestAnimationFrame(animateSpin);
+        }
+
+        /* ===================================================
+           4. إدارة النافذة المنبثقة والأسئلة
+           =================================================== */
+        function openQuestionModal(q) {
+            document.getElementById('q-badge').textContent = q.title;
+            document.getElementById('q-text').textContent = q.text;
+            document.getElementById('q-code-block').innerHTML = q.codeTemplate("");
+
+            // تجهيز خيارات الإجابة السريعة
+            const optsContainer = document.getElementById('options-container');
+            optsContainer.innerHTML = '';
+            optsContainer.classList.remove('hidden');
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "bg-slate-800 hover:bg-slate-700 text-cyan-300 font-mono py-2 px-3 rounded-xl border border-slate-700 text-sm md:text-base transition text-center code-font";
+                btn.textContent = opt;
+                btn.onclick = () => {
+                    const input = document.getElementById('blank-input');
+                    if (input) {
+                        input.value = opt;
+                        input.focus();
+                    }
+                };
+                optsContainer.appendChild(btn);
+            });
+
+            // إعادة تعيين عناصر الواجهة
+            const fb = document.getElementById('feedback');
+            fb.classList.add('hidden');
+            fb.className = "mb-6 p-4 rounded-xl font-bold text-center text-lg transition-all";
+
+            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+
+            const modal = document.getElementById('question-modal');
+            modal.classList.remove('hidden');
+
+            // التركيز على حقل الإدخال تلقائياً
+            setTimeout(() => {
+                const input = document.getElementById('blank-input');
+                if (input) input.focus();
+            }, 100);
+        }
+
+        function checkAnswer() {
+            const input = document.getElementById('blank-input');
+            if (!input) return;
+
+            const userVal = input.value.trim();
+            const fb = document.getElementById('feedback');
+            fb.classList.remove('hidden');
+
+            // فحص الإجابة المرن (تجاهل الفراغات الإضافية وحالة الأحرف)
+            const isCorrect = currentQuestion.altAnswers.some(ans => 
+                ans.toLowerCase().replace(/\s+/g, ' ') === userVal.toLowerCase().replace(/\s+/g, ' ')
+            );
+
+            if (isCorrect) {
+                // إجابة صحيحة
+                playSound('correct');
+                fb.className = "mb-6 p-4 rounded-xl font-bold text-center text-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                fb.innerHTML = "🎉 أحسنتِ! إجابة صحيحة، مبدعة يا بطلة!";
+                
+                // إخفاء زر التحقق وإظهار زر المتابعة
+                document.getElementById('submit-btn').classList.add('hidden');
+                document.getElementById('next-btn').classList.remove('hidden');
+
+                // حذف السؤال المحلول من قائمة الأسئلة النشطة
+                activeQuestions = activeQuestions.filter(q => q.id !== currentQuestion.id);
+                updateRemainingCount();
+            } else {
+                // إجابة خاطئة
+                playSound('wrong');
+                fb.className = "mb-6 p-4 rounded-xl font-bold text-center text-lg bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                fb.innerHTML = "💪 حاولي مرة أخرى، أنتِ قادرة! تفقدي الصيغة البرمجية دقيقاً.";
+            }
+        }
+
+        function closeQuestionModal() {
+            document.getElementById('question-modal').classList.add('hidden');
+            
+            // إعادة رسم العجلة المقسمة بناءً على الأسئلة المتبقية
+            drawWheel();
+
+            // إعادة تفعيل زر التدوير إذا بقيت أسئلة
+            if (activeQuestions.length > 0) {
+                const spinBtn = document.getElementById('spin-btn');
+                spinBtn.disabled = false;
+                spinBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                // إنهاء اللعبة عند الإجابة على جميع الأسئلة
+                setTimeout(showWinModal, 500);
+            }
+        }
+
+        function updateRemainingCount() {
+            document.getElementById('remaining-count').textContent = activeQuestions.length;
+        }
+
+        /* ===================================================
+           5. شاشة الفوز النهائية ومؤثر القصاصات الملونة (Confetti)
+           =================================================== */
+        function showWinModal() {
+            playSound('win');
+            document.getElementById('win-modal').classList.remove('hidden');
+            startConfetti();
+        }
+
+        function closeWinModal() {
+            document.getElementById('win-modal').classList.add('hidden');
+            stopConfetti();
+        }
+
+        // محرك Confetti بسيط وسريع بـ Canvas
+        let confettiAnimationId = null;
+        function startConfetti() {
+            const cCanvas = document.getElementById('confettiCanvas');
+            const cCtx = cCanvas.getContext('2d');
+            cCanvas.width = window.innerWidth;
+            cCanvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+
+            for (let i = 0; i < 120; i++) {
+                particles.push({
+                    x: Math.random() * cCanvas.width,
+                    y: Math.random() * cCanvas.height - cCanvas.height,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    spin: Math.random() * 360
+                });
+            }
+
+            function renderConfetti() {
+                cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+                particles.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    p.spin += 5;
+
+                    if (p.y > cCanvas.height) {
+                        p.y = -10;
+                        p.x = Math.random() * cCanvas.width;
+                    }
+
+                    cCtx.save();
+                    cCtx.translate(p.x, p.y);
+                    cCtx.rotate((p.spin * Math.PI) / 180);
+                    cCtx.fillStyle = p.color;
+                    cCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    cCtx.restore();
+                });
+
+                confettiAnimationId = requestAnimationFrame(renderConfetti);
+            }
+
+            renderConfetti();
+        }
+
+        function stopConfetti() {
+            if (confettiAnimationId) {
+                cancelAnimationFrame(confettiAnimationId);
+            }
+        }
+
+        /* ===================================================
+           6. إعادة اللعب والتهيئة
+           =================================================== */
+        function resetGame() {
+            activeQuestions = [...initialQuestions];
+            currentRotation = 0;
+            isSpinning = false;
+            
+            updateRemainingCount();
+            drawWheel();
+
+            const spinBtn = document.getElementById('spin-btn');
+            spinBtn.disabled = false;
+            spinBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        // تهيئة اللعبة عند تحميل الصفحة
+        window.onload = function() {
+            drawWheel();
+            
+            // دعم ضغط مفتاح Enter في الإدخال للتأكيد السريع
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    const modal = document.getElementById('question-modal');
+                    if (!modal.classList.contains('hidden')) {
+                        const nextBtn = document.getElementById('next-btn');
+                        if (!nextBtn.classList.contains('hidden')) {
+                            closeQuestionModal();
+                        } else {
+                            checkAnswer();
+                        }
+                    }
+                }
+            });
+        };
+
+        // إعادة تكييف مقاسات Canvas عند تغيير حجم الشاشة
+        window.onresize = function() {
+            drawWheel();
+        };
+    </script>
+</body>
+</html>
